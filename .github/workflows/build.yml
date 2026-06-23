@@ -14,23 +14,29 @@ permissions:
 env:
   PROJECT_ID: ai-col-lab
   PROJECT_NAME: AI Col Lab
-  FLUTTER_DIR: tools/gui
+  FLUTTER_DIR: ai_col_lab
 
 jobs:
   build-and-release:
     runs-on: windows-2022
     steps:
-      - name: Checkout private repo
+      - name: Repository checkout
         uses: actions/checkout@v4
         with:
-          repository: humanghosts/collaboration
+          repository: humanghosts/ohoda
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
 
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      - name: Install dependencies
+      - name: Init submodule (collaboration skills)
+        run: git submodule update --init --remote --recursive
+
+      - name: Install dependencies (monorepo)
+        run: dart pub get
+
+      - name: Install dependencies (app)
         working-directory: ${{ env.FLUTTER_DIR }}
         run: flutter pub get
 
@@ -41,12 +47,12 @@ jobs:
       - name: Bundle standard skills
         shell: pwsh
         run: |
-          Copy-Item -Path tools/gui/standard -Destination tools/gui/build/windows/x64/runner/Release/data/flutter_assets/standard -Recurse -Force
+          Copy-Item -Path collaboration/standard -Destination ${{env.FLUTTER_DIR}}/build/windows/x64/runner/Release/data/flutter_assets/standard -Recurse -Force
 
       - name: Package artifacts
         shell: pwsh
         run: |
-          $dir = "tools\gui\build\windows\x64\runner\Release"
+          $dir = "${{env.FLUTTER_DIR}}\build\windows\x64\runner\Release"
           tar -czf ai-col-lab-windows-x64.tar.gz -C $dir .
 
       - name: Create Release
@@ -67,7 +73,6 @@ jobs:
           $downloadBase = "https://github.com/humanghosts/releases/releases/download/$tag"
           $file = "ai-col-lab-windows-x64.tar.gz"
           $size = (Get-Item $file).Length
-
           $latest = @{
             projectName = "${{ env.PROJECT_NAME }}"
             version = $version
@@ -82,18 +87,13 @@ jobs:
               }
             }
           } | ConvertTo-Json -Compress
-
           Write-Output "=== latest.json ==="
           Write-Output $latest
           Write-Output "===================="
-
           $latest | Out-File -FilePath latest.json -Encoding utf8NoBOM
-
           $path = "${{ env.PROJECT_ID }}/latest.json"
           $content = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((Get-Content latest.json -Raw)))
           $ghToken = "${{ secrets.GITHUB_TOKEN }}"
-
-          # 获取现有文件 SHA
           $headers = @{ Authorization = "token $ghToken" }
           try {
             $existing = Invoke-RestMethod -Uri "https://api.github.com/repos/humanghosts/releases/contents/$path" -Headers $headers
@@ -101,13 +101,11 @@ jobs:
           } catch {
             $sha = $null
           }
-
           $body = @{
             message = "Update ${{ env.PROJECT_ID }}/latest.json: $version"
             content = $content
           }
           if ($sha) { $body.sha = $sha }
           $jsonBody = $body | ConvertTo-Json
-
           Invoke-RestMethod -Uri "https://api.github.com/repos/humanghosts/releases/contents/$path" `
             -Method Put -Headers $headers -Body $jsonBody -ContentType "application/json"
