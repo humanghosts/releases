@@ -30,8 +30,12 @@ jobs:
         with:
           channel: stable
 
-      - name: Init submodule (collaboration skills — public repo, bypass auth)
-        run: git -c http.extraheader= submodule update --init --remote --recursive
+      - name: Init submodule (collaboration skills)
+        env:
+          TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${TOKEN}@github.com".insteadOf https://github.com
+          git submodule update --init --remote --recursive
 
       - name: Install dependencies (monorepo)
         run: dart pub get
