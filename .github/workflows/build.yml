@@ -30,8 +30,8 @@ jobs:
         with:
           channel: stable
 
-      - name: Init submodule (collaboration skills)
-        run: git submodule update --init --remote --recursive
+      - name: Init submodule (collaboration skills — public repo, bypass auth)
+        run: git -c http.extraheader= submodule update --init --remote --recursive
 
       - name: Install dependencies (monorepo)
         run: dart pub get
