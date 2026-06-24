@@ -34,8 +34,7 @@ jobs:
         env:
           TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
         run: |
-          git config --global url."https://${TOKEN}@github.com".insteadOf https://github.com
-          git submodule update --init --remote --recursive
+          git -c http.https://github.com/.extraheader= -c url."https://${TOKEN}@github.com/".insteadOf https://github.com/ submodule update --init --remote --recursive
 
       - name: Install dependencies (monorepo)
         run: dart pub get
