@@ -30,14 +30,13 @@ jobs:
         with:
           channel: stable
 
-      - name: Init submodule (collaboration skills)
+      - name: Clone collaboration skills (private repo)
         shell: bash
         env:
           TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
         run: |
-          git config --local --unset-all http.https://github.com/.extraheader 2>/dev/null || true
-          git config --local url."https://x-access-token:${TOKEN}@github.com".insteadOf https://github.com
-          git submodule update --init --remote
+          rm -rf collaboration
+          git clone --depth 1 https://x-access-token:${TOKEN}@github.com/humanghosts/collaboration.git collaboration
 
       - name: Install dependencies (monorepo)
         run: dart pub get
