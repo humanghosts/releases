@@ -34,7 +34,7 @@ jobs:
         env:
           TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
         run: |
-          git config --global url."https://x-access-token:${TOKEN}@github.com".insteadOf https://github.com
+          git config --global url."https://${TOKEN}@github.com".insteadOf https://github.com
           git submodule update --init --remote --recursive
 
       - name: Install dependencies (monorepo)
